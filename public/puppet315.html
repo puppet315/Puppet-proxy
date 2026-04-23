@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>puppet315 | Educational Scramjet Proxy Demo</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0b1020;
+        --panel: #131a2e;
+        --text: #e9edff;
+        --muted: #aab4e2;
+        --accent: #7aa2ff;
+        --accent-2: #4e7dff;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+        background: radial-gradient(circle at top right, #1b2a55, var(--bg) 45%);
+        color: var(--text);
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 20px;
+      }
+      .card {
+        width: min(760px, 100%);
+        background: color-mix(in oklab, var(--panel), black 8%);
+        border: 1px solid #243158;
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+      }
+      h1 { margin: 0 0 8px; font-size: clamp(1.5rem, 3vw, 2.2rem); }
+      p { color: var(--muted); line-height: 1.5; }
+      .notice {
+        background: #1f2948;
+        border: 1px solid #33477f;
+        border-radius: 12px;
+        padding: 12px;
+        margin: 16px 0;
+      }
+      form { display: grid; grid-template-columns: 1fr auto; gap: 10px; margin-top: 18px; }
+      input {
+        background: #0f1530;
+        border: 1px solid #31426e;
+        color: var(--text);
+        padding: 12px 14px;
+        border-radius: 10px;
+        font-size: 1rem;
+      }
+      button {
+        border: none;
+        border-radius: 10px;
+        padding: 0 18px;
+        background: linear-gradient(135deg, var(--accent), var(--accent-2));
+        color: white;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      .status { margin-top: 14px; font-size: 0.95rem; color: #cfe0ff; }
+      code {
+        background: #0a0f20;
+        border: 1px solid #243158;
+        padding: 2px 6px;
+        border-radius: 6px;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="card">
+      <h1>puppet315</h1>
+      <p>
+        Educational proxy launcher designed to work with the MercuryWorkshop Scramjet client.
+      </p>
+      <div class="notice">
+        Use only in environments where you have explicit permission.
+      </div>
+      <form id="proxyForm">
+        <input id="targetUrl" type="url" required placeholder="https://example.org" />
+        <button type="submit">Open</button>
+      </form>
+      <p class="status" id="status">Initializing…</p>
+      <p>
+        Default lookup order for the Scramjet client bundle:
+        <code>/scramjet/scramjet.client.js</code> → jsDelivr fallback.
+      </p>
+    </main>
+
+    <script>
+      const SCRAMJET_BUNDLE_CANDIDATES = [
+        '/scramjet/scramjet.client.js',
+        'https://cdn.jsdelivr.net/gh/MercuryWorkshop/scramjet@main/static/scramjet.client.js',
+      ];
+
+      const statusEl = document.getElementById('status');
+      const form = document.getElementById('proxyForm');
+      const targetInput = document.getElementById('targetUrl');
+
+      let encodeUrl = (value) => btoa(unescape(encodeURIComponent(value))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+
+      const setStatus = (message) => (statusEl.textContent = message);
+
+      function loadScript(src) {
+        return new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = src;
+          script.onload = resolve;
+          script.onerror = () => reject(new Error('Failed to load script: ' + src));
+          document.head.appendChild(script);
+        });
+      }
+
+      async function loadScramjet() {
+        for (const src of SCRAMJET_BUNDLE_CANDIDATES) {
+          try {
+            await loadScript(src);
+            if (window.$scramjet && typeof window.$scramjet.encodeUrl === 'function') {
+              encodeUrl = window.$scramjet.encodeUrl;
+              setStatus(`Scramjet loaded from ${src}.`);
+              return;
+            }
+          } catch (_) {
+            // try next source
+          }
+        }
+
+        setStatus('Scramjet bundle not found; using built-in base64url encoder fallback.');
+      }
+
+      form.addEventListener('submit', (event) => {
+        event.preventDefault();
+        const rawUrl = targetInput.value.trim();
+        if (!rawUrl) return;
+        try {
+          const normalized = new URL(rawUrl).toString();
+          const proxiedPath = '/service/' + encodeUrl(normalized);
+          window.location.href = proxiedPath;
+        } catch {
+          setStatus('Please enter a valid URL (including http:// or https://).');
+        }
+      });
+
+      loadScramjet();
+    </script>
+  </body>
+</html>
