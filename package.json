@@ -1,0 +1,19 @@
+{
+  "name": "puppet-proxy",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Educational Scramjet-inspired proxy launcher for puppet315.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "PORT=8080 node server.js",
+    "setup:scramjet": "bash scripts/setup-scramjet.sh"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "morgan": "^1.10.0"
+  }
+}
