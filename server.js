@@ -90,6 +90,7 @@ app.use('/service/:encoded', async (req, res) => {
     for (const [name, value] of upstream.headers.entries()) {
       const lowered = name.toLowerCase();
       if (HOP_BY_HOP_HEADERS.has(lowered)) continue;
+      if (['content-security-policy', 'x-frame-options', 'frame-options', 'content-length'].includes(lowered)) continue;
       if (lowered === 'content-security-policy' || lowered === 'content-length') continue;
       res.setHeader(name, value);
     }
